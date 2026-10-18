@@ -17,7 +17,7 @@ function escapeHtml(value) {
 
 function getContext() {
     if (!window.SillyTavern?.getContext) {
-        throw new Error('找不到 SillyTavern.getContext()。請確認 SillyTavern 版本並重新載入頁面。');
+        throw new Error('找不到 SillyTavern.getContext()。请确认 SillyTavern 版本并重新载入页面。');
     }
     return window.SillyTavern.getContext();
 }
@@ -26,7 +26,7 @@ function downloadBackup(chat, context) {
     const payload = {
         backup_type: 'SillyTavern Batch Text Replace backup',
         created_at: new Date().toISOString(),
-        note: '這是修改前目前聊天訊息陣列的 JSON 備份，不是原始 JSONL 檔案的逐位元複製。',
+        note: '这是修改前目前聊天消息数组的 JSON 备份，不是原始 JSONL 文件的逐字节复制。',
         character_name: context.name2 ?? context.characterName ?? null,
         chat_id: context.chatId ?? context.chat_id ?? null,
         messages: structuredClone(chat),
@@ -60,7 +60,7 @@ function findMatches(chat, findText) {
             results.push({
                 index: i,
                 count,
-                speaker: message.is_user ? '使用者' : (message.name || '角色／系統'),
+                speaker: message.is_user ? '用户' : (message.name || '角色／系统'),
                 excerpt: message.mes.slice(0, 180),
             });
         }
@@ -77,18 +77,22 @@ function buildPanel() {
           <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
-          <p class="stbr-note">只修改目前聊天中訊息的文字欄位（mes），不修改發話者名稱或其他中繼資料。</p>
-          <label for="stbr-find">尋找文字</label>
-          <input id="stbr-find" type="text" class="text_pole" autocomplete="off" placeholder="例如：艾莉絲絲">
-          <label for="stbr-replace">取代為</label>
-          <input id="stbr-replace" type="text" class="text_pole" autocomplete="off" placeholder="例如：艾莉絲">
+          <p class="stbr-note">只修改当前聊天中消息的文字字段（mes），不修改发言者名称或其他元数据。</p>
+          <label for="stbr-find">查找文字</label>
+          <input id="stbr-find" type="text" class="text_pole" autocomplete="off" placeholder="例如：艾莉丝丝">
+          <label for="stbr-replace">替换为</label>
+          <input id="stbr-replace" type="text" class="text_pole" autocomplete="off" placeholder="例如：艾莉丝">
+          <label class="stbr-checkbox-label" for="stbr-autobackup">
+            <input id="stbr-autobackup" type="checkbox" checked>
+            执行前自动下载 JSON 备份
+          </label>
           <div class="stbr-actions">
-            <button id="stbr-preview" class="menu_button">預覽</button>
-            <button id="stbr-apply" class="menu_button" disabled>備份並全部取代</button>
+            <button id="stbr-preview" class="menu_button">预览</button>
+            <button id="stbr-apply" class="menu_button" disabled>全部替换</button>
           </div>
-          <div id="stbr-status" class="stbr-status" role="status">請先輸入要尋找的文字。</div>
+          <div id="stbr-status" class="stbr-status" role="status">请先输入要查找的文字。</div>
           <div id="stbr-results" class="stbr-results"></div>
-          <p class="stbr-warning">執行時會先下載修改前的 JSON 備份，再寫入聊天。請確認瀏覽器允許下載檔案。此備份是訊息資料備份，不是原始聊天檔的逐位元副本。</p>
+          <p class="stbr-warning">若勾选自动备份，执行时会先下载修改前的 JSON 备份，再写入聊天。请确认浏览器允许下载文件。此备份是消息数据备份，不是原始聊天文件的逐字节副本。</p>
         </div>
       </div>
     </section>`;
@@ -100,6 +104,7 @@ function buildPanel() {
 
     const $find = $('#stbr-find');
     const $replace = $('#stbr-replace');
+    const $autoBackup = $('#stbr-autobackup');
     const $preview = $('#stbr-preview');
     const $apply = $('#stbr-apply');
     const $status = $('#stbr-status');
@@ -121,19 +126,19 @@ function buildPanel() {
             const replaceText = $replace.val();
             if (!findText) {
                 clearPreview();
-                $status.text('「尋找文字」不可空白。');
+                $status.text('“查找文字”不可空白。');
                 return;
             }
             if (findText === replaceText) {
                 clearPreview();
-                $status.text('尋找文字與取代文字相同，沒有需要修改的內容。');
+                $status.text('查找文字与替换文字相同，没有需要修改的内容。');
                 return;
             }
             const context = getContext();
             const chat = context.chat;
             if (!Array.isArray(chat) || chat.length === 0) {
                 clearPreview();
-                $status.text('目前沒有可處理的聊天訊息。');
+                $status.text('当前没有可处理的聊天消息。');
                 return;
             }
 
@@ -142,7 +147,7 @@ function buildPanel() {
             lastReplace = replaceText;
 
             const total = lastMatches.reduce((sum, item) => sum + item.count, 0);
-            $status.text(`找到 ${total} 處，分布於 ${lastMatches.length} 則訊息。請檢查下方預覽。`);
+            $status.text(`找到 ${total} 处，分布于 ${lastMatches.length} 条消息。请检查下方预览。`);
             $results.empty();
 
             if (lastMatches.length) {
@@ -153,51 +158,53 @@ function buildPanel() {
                         : item.excerpt;
                     const row = $('<li></li>');
                     row.append($('<div class="stbr-result-head"></div>').text(
-                        `第 ${item.index + 1} 則 · ${item.speaker} · ${item.count} 處`
+                        `第 ${item.index + 1} 条 · ${item.speaker} · ${item.count} 处`
                     ));
                     row.append($('<div class="stbr-excerpt"></div>').text(excerpt));
                     list.append(row);
                 }
                 $results.append(list);
                 if (lastMatches.length > 30) {
-                    $results.append($('<p></p>').text(`僅顯示前 30 則；實際共 ${lastMatches.length} 則。`));
+                    $results.append($('<p></p>').text(`仅显示前 30 条；实际共 ${lastMatches.length} 条。`));
                 }
                 $apply.prop('disabled', false);
             } else {
-                $results.text('沒有找到符合的文字。');
+                $results.text('没有找到符合的文字。');
                 $apply.prop('disabled', true);
             }
         } catch (error) {
             clearPreview();
-            $status.text(`預覽失敗：${error.message}`);
+            $status.text(`预览失败：${error.message}`);
             console.error(`[${MODULE_NAME}] preview failed`, error);
         }
     });
 
     $apply.on('click', async () => {
         if (!lastFind || lastFind !== $find.val() || lastReplace !== $replace.val() || !lastMatches.length) {
-            $status.text('預覽已失效，請重新預覽。');
+            $status.text('预览已失效，请重新预览。');
             $apply.prop('disabled', true);
             return;
         }
 
+        const autoBackup = $autoBackup.prop('checked');
         const total = lastMatches.reduce((sum, item) => sum + item.count, 0);
         const confirmed = window.confirm(
-            `即將取代目前聊天中的 ${total} 處文字（${lastMatches.length} 則訊息）。\n\n` +
-            `尋找：${lastFind}\n取代為：${lastReplace}\n\n` +
-            `程式會先下載修改前的 JSON 備份。確定繼續？`
+            `即将替换当前聊天中的 ${total} 处文字（${lastMatches.length} 条消息）。\n\n` +
+            `查找：${lastFind}\n替换为：${lastReplace}\n\n` +
+            (autoBackup ? '程序会先下载修改前的 JSON 备份。' : '未勾选自动备份，不会下载备份文件。') +
+            '确定继续？'
         );
         if (!confirmed) return;
 
         $apply.prop('disabled', true);
         $preview.prop('disabled', true);
-        $status.text('正在備份並修改……');
+        $status.text(autoBackup ? '正在备份并修改……' : '正在修改……');
 
         let changed = [];
         try {
             const context = getContext();
             const chat = context.chat;
-            if (!Array.isArray(chat)) throw new Error('目前聊天資料不可用。');
+            if (!Array.isArray(chat)) throw new Error('当前聊天数据不可用。');
 
             // Re-check the preview against current chat to avoid applying stale results.
             const currentMatches = findMatches(chat, lastFind);
@@ -206,11 +213,13 @@ function buildPanel() {
             if (currentTotal !== expectedTotal ||
                 currentMatches.map(x => `${x.index}:${x.count}`).join('|') !==
                 lastMatches.map(x => `${x.index}:${x.count}`).join('|')) {
-                throw new Error('聊天內容在預覽後發生變化。未修改任何內容，請重新預覽。');
+                throw new Error('聊天内容在预览后发生变化。未修改任何内容，请重新预览。');
             }
 
-            // Backup must be initiated before mutating the live chat array.
-            downloadBackup(chat, context);
+            // Backup (optional) must be initiated before mutating the live chat array.
+            if (autoBackup) {
+                downloadBackup(chat, context);
+            }
 
             for (const item of currentMatches) {
                 const message = chat[item.index];
@@ -222,7 +231,8 @@ function buildPanel() {
                 // Roll back rather than leaving in-memory edits unsaved.
                 for (const item of changed) item.message.mes = item.original;
                 changed = [];
-                throw new Error('此版本未在 getContext() 提供 saveChat()。已取消修改；備份檔仍已下載。');
+                throw new Error('此版本未在 getContext() 提供 saveChat()。已取消修改' +
+                    (autoBackup ? '；备份文件仍已下载。' : '。'));
             }
 
             await context.saveChat();
@@ -235,10 +245,11 @@ function buildPanel() {
                 context.eventSource.emit(context.event_types.CHAT_CHANGED);
             }
 
-            $status.text(`完成：已取代 ${total} 處，修改 ${changed.length} 則訊息。修改前備份已下載。`);
+            $status.text(`完成：已替换 ${total} 处，修改 ${changed.length} 条消息。` +
+                (autoBackup ? '修改前备份已下载。' : '未下载备份。'));
             $results.empty();
             clearPreview();
-            notify(`已取代 ${total} 處文字。`, 'success');
+            notify(`已替换 ${total} 处文字。`, 'success');
         } catch (error) {
             // If save failed after mutation, restore the in-memory message text.
             for (const item of changed) item.message.mes = item.original;
@@ -250,7 +261,7 @@ function buildPanel() {
             } catch (rollbackError) {
                 console.error(`[${MODULE_NAME}] rollback save failed`, rollbackError);
             }
-            $status.text(`操作未完成：${error.message}\n若已下載備份，請保留該檔案。`);
+            $status.text(`操作未完成：${error.message}\n若已下载备份，请保留该文件。`);
             notify(error.message, 'error');
             console.error(`[${MODULE_NAME}] replace failed`, error);
         } finally {
@@ -279,31 +290,4 @@ if (window.SillyTavern?.getContext) {
     setTimeout(init, 1500);
 } else {
     document.addEventListener('DOMContentLoaded', () => setTimeout(init, 1500), { once: true });
-}           console.error(`[${MODULE_NAME}] replace failed`, error);
-        } finally {
-            $preview.prop('disabled', false);
-            $apply.prop('disabled', false);
-        }
-    });
-}
-
-function init() {
-    if (!window.jQuery) {
-        console.error(`[${MODULE_NAME}] jQuery not found; extension UI was not initialized.`);
-        return;
-    }
-    if ($('#' + EXTENSION_ID).length) return;
-    buildPanel();
-    console.log(`[${MODULE_NAME}] loaded`);
-}
-
-if (window.SillyTavern?.getContext) {
-    const context = window.SillyTavern.getContext();
-    if (context.eventSource && context.event_types?.APP_READY) {
-        context.eventSource.on(context.event_types.APP_READY, init);
-    }
-    // Fallback for versions where APP_READY has already fired before this extension runs.
-    setTimeout(init, 1500);
-} else {
-    document.addEventListener('DOMContentLoaded', () => setTimeout(init, 1500), { once: true });
-}
+                     }
