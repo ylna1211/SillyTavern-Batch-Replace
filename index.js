@@ -279,4 +279,31 @@ if (window.SillyTavern?.getContext) {
     setTimeout(init, 1500);
 } else {
     document.addEventListener('DOMContentLoaded', () => setTimeout(init, 1500), { once: true });
+}           console.error(`[${MODULE_NAME}] replace failed`, error);
+        } finally {
+            $preview.prop('disabled', false);
+            $apply.prop('disabled', false);
+        }
+    });
+}
+
+function init() {
+    if (!window.jQuery) {
+        console.error(`[${MODULE_NAME}] jQuery not found; extension UI was not initialized.`);
+        return;
+    }
+    if ($('#' + EXTENSION_ID).length) return;
+    buildPanel();
+    console.log(`[${MODULE_NAME}] loaded`);
+}
+
+if (window.SillyTavern?.getContext) {
+    const context = window.SillyTavern.getContext();
+    if (context.eventSource && context.event_types?.APP_READY) {
+        context.eventSource.on(context.event_types.APP_READY, init);
+    }
+    // Fallback for versions where APP_READY has already fired before this extension runs.
+    setTimeout(init, 1500);
+} else {
+    document.addEventListener('DOMContentLoaded', () => setTimeout(init, 1500), { once: true });
 }
