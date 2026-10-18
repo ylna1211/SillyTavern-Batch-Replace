@@ -1,0 +1,44 @@
+#st-batch-text-replace .stbr-note,
+#st-batch-text-replace .stbr-warning {
+    opacity: 0.85;
+    font-size: 0.9em;
+    line-height: 1.45;
+}
+#st-batch-text-replace label {
+    display: block;
+    margin: 0.65em 0 0.25em;
+}
+#st-batch-text-replace input {
+    width: 100%;
+    box-sizing: border-box;
+}
+#st-batch-text-replace .stbr-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5em;
+    margin-top: 0.8em;
+}
+#st-batch-text-replace .stbr-status {
+    white-space: pre-wrap;
+    margin-top: 0.8em;
+}
+#st-batch-text-replace .stbr-results {
+    margin-top: 0.5em;
+    max-height: 22em;
+    overflow: auto;
+}
+#st-batch-text-replace .stbr-list {
+    padding-left: 1.5em;
+}
+#st-batch-text-replace .stbr-list li {
+    margin: 0.6em 0;
+}
+#st-batch-text-replace .stbr-result-head {
+    font-weight: 600;
+}
+#st-batch-text-replace .stbr-excerpt {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    opacity: 0.85;
+    font-size: 0.9em;
+}
